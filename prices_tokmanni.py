@@ -42,62 +42,87 @@ class TokmanniScraper(Scraper):
         super().__init__()
     def search_product(self, product_code):
         try:
-            query = f"\"tokmanni\" \"{product_code}\""
-            url = f"https://www.google.com/search?q={query}"
+            url = f"https://www.tokmanni.fi/search/?q={product_code}"
             html = self.get_html_from_url(url, 10)
             if html:
                 soup = BeautifulSoup(html, 'html.parser')
-                if not self.search_result_check(soup):
-                    #print("\nTOKMANNI:\nEi tuloksia haulla:", product_code)
-                    return None, None, None
+                self.search_result_check(soup)
                 link = self.specific_product_page(soup, product_code)
-                if not link:
-                    return None, None, None
                 html = self.get_html_from_url(link, 10)
                 if html:
                     soup = BeautifulSoup(html, 'html.parser')
                     price, product_name = self.extract_product_information(soup)
                     if product_name and price:
-                        #print("\nTOKMANNI:\ntuotekoodi:", product_code, "\ntuotenimi:", product_name, "\nhinta:", price, "€")
-                        return print(link, price, product_name)
+                        print("\nTOKMANNI:\ntuotekoodi:", product_code, "\ntuotenimi:", product_name, "\nhinta:", price, "€")
+                        return link, price, product_name
                 else:
-                    print("(1) TOKMANNI: Error with handling HTML.")
-                    return None, None, None
+                    ValueError("(1) TOKMANNI: Error with handling HTML.")
             else:
-                print("(2) TOKMANNI: Error with handling HTML.")
-                return None, None, None
+                ValueError("(2) TOKMANNI: Error with handling HTML.")
         except Exception as e:
             return None, None, None
 
     def search_result_check(self, soup): # returns False if no results found, True if results were found, otherwise None
         try:
             # Define the target text
-            target_text = "About 0 results"
-
-            # Find the div element with class "LHJvCe" and id "result-stats"
-            result_stats_div = soup.find('div', {'class': 'LHJvCe', 'id': 'result-stats'})
+            target_text = "Kokeile toista hakusanaa ..."
+            page_wrapper = soup.find('div', class_='page-wrapper')
+            #print("PAGE_WRAPPER:",page_wrapper)
+            page_columns = page_wrapper.find('div', class_='columns')
+            #print("COLUMNS:",page_columns)
+            main_column = page_columns.find('div', class_='column main')
+            #print("MAIN COLUMN:",main_column)
+            no_results_parent = main_column.find('div', class_='kuContainer kuFiltersLeft')
+            #print("PARENT:",no_results_parent)
+            no_results = no_results_parent.find('div', class_='kuNoRecordFound')
+            #print("CHILD:",no_results)
+            child_1 = no_results.find('div', class_='kuNoResults-lp')
+            #print("CHILD1:",child_1)
+            child_2 = child_1.find('div', class_='kuNoResultsInner')
+            #print("CHILD2:",child_2)
+            target_div = child_2.find('div', class_='kuNoResults-lp-message')
+            #print("TARGET:",target_div)
+            no_results_text = target_div.get_text()
+            #print("TEXT:",no_results_text)
 
             # Check if the target text is present in the div
-            if result_stats_div and target_text in result_stats_div.get_text():
-                return False
+            if target_text in no_results_text:
+                return ValueError("TOKMANNI: tuotetta ei löytynyt hausta")
             else:
                 return True
         except Exception as e:
-            return None
+            return ValueError("TOKMANNI: tuotetta ei löytynyt hausta")
 
     def specific_product_page(self, soup, product_code): # Returns the link to the product page ro None
         try:
-            # Find the <em> tag
-            em_tag = soup.find('em')
-            # Check if the text inside the <em> tag is equal to product_code
-            if em_tag and int(em_tag.text.strip()) == int(product_code):
-                # Find the <a> tag and get the href value
-                a_tag = soup.find('a', {'jsname': 'UWckNb'})
-                if a_tag:
-                    link = a_tag['href']
-                    return link
+            # Define the target text
+            target_text = "Kokeile toista hakusanaa ..."
+            page_wrapper = soup.find('div', class_='page-wrapper')
+            #print("PAGE_WRAPPER:",page_wrapper)
+            page_columns = page_wrapper.find('div', class_='columns')
+            #print("COLUMNS:",page_columns)
+            main_column = page_columns.find('div', class_='column main')
+            #print("MAIN COLUMN:",main_column)
+            results_parent = main_column.find('div', class_='kuContainer kuFiltersLeft')
+            #print("PARENT:",results_parent)
+            results = results_parent.find('div', class_='kuProListing')
+            #print("CHILD:",results)
+            child_1 = results.find('div', class_='kuResultList')
+            #print("CHILD1:",child_1)
+            child_2 = child_1.find('div', class_='kuProductContent')
+            #print("CHILD2:",child_2)
+            a_tag = child_2.find('div', class_='kuGridView').find('a')
+            #print("TARGET:",a_tag)
+            link = a_tag['href']
+            #print(url)
+
+            # Check if the link was found
+            if link:
+                return link
+            else:
+                return ValueError("TOKMANNI: tuotesivua ei löytynyt.")
         except Exception as e:
-            return None
+            return ValueError("TOKMANNI: tuotesivua ei löytynyt.")
         
     def extract_product_information(self, soup): # Returns price and product name or None
         try:
@@ -112,19 +137,18 @@ class TokmanniScraper(Scraper):
             product_name = page_title_h1.get_text(strip=True)
             return price, product_name
         except Exception as e:
-            return None, None
+            return ValueError("Tokmanni: Virhe tuotetietojen hakemisessa.")
 
 tokmanni_scraper = TokmanniScraper()
-tokmanni_scraper.search_product(6418677334948)
+tokmanni_scraper.search_product(6418677333262)
 tokmanni_scraper.search_product(7314150111060)
 tokmanni_scraper.search_product(982756917501)
 
 
-
-# EAN: 6418677334948
-# Nimi: Kytkin ABB Jussi 1+1+1 10631UP
+# EAN: 6418677333262
+# Nimi: Kytkin ABB Jussi 7 1067UP
 # Merkki: ABB
-# Hinta: 22,95
+# Hinta: 21,99
 
 # EAN: 7314150111060
 # Nimi: Hylsysarja Bahco S460 46-osainen

@@ -37,80 +37,82 @@ class Scraper:
             return None
 
 
-class PuuiloScraper(Scraper):
+class KRautaScraper(Scraper):
     def __init__(self):
         super().__init__()
     def search_product(self, product_code):
         try:
-            url = f"https://www.puuilo.fi/catalogsearch/result/?q={product_code}"
+            url = f"https://www.k-rauta.fi/etsi?query={product_code}"
             html = self.get_html_from_url(url)
             if html:
                 soup = BeautifulSoup(html, 'html.parser')
-                self.search_result_check(soup)                
+                if not self.search_result_check(soup):
+                    ValueError("\nK-RAUTA:\nEi tuloksia haulla:", product_code)
+                
                 link = self.specific_product_page(soup)
+                link = f"https://www.k-rauta.fi{link}"
                 html = self.get_html_from_url(link)
                 if html:
                     soup = BeautifulSoup(html, 'html.parser')
-                    price, product_name = self.extract_product_information(soup, product_code)
+                    price, product_name = self.extract_product_information(soup)
                     if product_name and price:
+                        print("\nK-RAUTA:\ntuotekoodi:", product_code, "\ntuotenimi:", product_name, "\nhinta:", price, "€")
                         return link, price, product_name
                 else:
-                    return ValueError("(1) PUUILO: Error with handling HTML.")
+                    ValueError("(1) K-RAUTA: Error with handling HTML.")
             else:
-                return ValueError("(2) PUUILO: Error with handling HTML.")
+                ValueError("(2) K-RAUTA: Error with handling HTML.")
         except Exception as e:
             return None, None, None
-    
+
     def search_result_check(self, soup): # returns True if there are search results or False if no results
-        count_span = soup.find('span', class_='amsearch-results-count')
-        if count_span and count_span.get_text(strip=True) == '(0)':
-            return False
-        else:
-            return True
-        
-    def specific_product_page(self, soup): # returns link to the prodcut page or None
         try:
-            a_element = soup.select_one('article.product-item-info a.product-item-photo') # Find the <a> element inside the <article> tag
+            no_search_results_element = soup.find('div', class_="empty-search-result")
+            if no_search_results_element:
+                result_text = no_search_results_element.get_text(strip=True)
+                return False
+            else:
+                return True
+        except Exception as e:
+            return None
+        
+    def specific_product_page(self, soup): # returns specific product page or None
+        try:
+            a_element = soup.find('a', class_='product-card') # Find the <a> element with class "product-card"
             if a_element:
                 link = a_element['href'] # Extract the value of the "href" attribute
                 return link
             else:
-                return ValueError("PUUILO: Tuotesivua ei löytynyt.")
+                return None
         except Exception as e:
             return None
 
-    def extract_product_information(self, soup, product_code): # returns price and product name or None
+    def extract_product_information(self, soup): # returns price and product name or None
         try:
-            # Find the <div> where EAN code is nested
-            ean_parent_div = soup.find('div', class_='product-info-main')
-            ean_child_div = ean_parent_div.find('div', class_='product-sku-container')
-            ean_content_div = ean_child_div.find('div', class_='product attribute ean')
-            ean = ean_content_div.find('div', class_='value').get_text()
-            if(int(ean) != product_code):
-                return ValueError("PUUILO: EAN-koodi ei vastannut hakua")
-            # Find the element with class 'price' inside the span with id 'product-price-107111'
-            price_span = soup.find('span', class_='price')
-            # Extract the price text from the span and remove non-numeric characters
-            price_text = price_span.text.replace('&nbsp;', '').replace('€', '').replace(',', '.')
-            # Convert the extracted text to a float
-            price = float(price_text)
+            # Extract price span
+            price_span = soup.find('span', class_='price-view-fi__sale-price--prefix')
+            price_text = price_span.next_sibling.strip()
+            price= float(price_text.replace("€", "").replace(",", "."))
 
-            # Extract product name
-            product_name = soup.find('span', {'data-ui-id': 'page-title-wrapper'}).text.strip()
-
+            # Extract the product name
+            product_name = soup.find('h1', class_='product-heading__product-name').text.strip()
             return price, product_name
         except Exception as e:
             return None, None
 
-puuilo_scraper = PuuiloScraper()
-puuilo_scraper.search_product(6418677334948)
-puuilo_scraper.search_product(7314150111060)
+prisma_scraper = PrismaScraper()
+prisma_scraper.search_product(6418677334948)
+prisma_scraper.search_product(7314150111060)
+prisma_scraper.search_product(982756917501)
+
 
 
 # EAN: 6418677334948
-# Nimi: Jussi kytkin 1+1+1 uppoasennus
-# Merkki: -
-# Hinta: 21,90
+# Nimi: ABB kytkin jussi 1+1+1 10631u
+# Merkki: ABB
+# Hinta: 28,80
 
-# EAN: 7314150111060 <-- Ei tuloksia
+# EAN: 7314150111060 <-- ehdottaa jotain paskaa mut pitäisi olla ei tuloksia. Ja onkin :)
+
+# EAN 982756917501 <-- Ei hakutuloksia "Hakusanalla ei löytynyt yhtään tuotetta." ku hakee prismasta
 
