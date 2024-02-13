@@ -51,7 +51,7 @@ class TokmanniScraper(Scraper):
                 html = self.get_html_from_url(link, 10)
                 if html:
                     soup = BeautifulSoup(html, 'html.parser')
-                    price, product_name = self.extract_product_information(soup)
+                    price, product_name = self.extract_product_information(soup, product_code)
                     if product_name and price:
                         print("\nTOKMANNI:\ntuotekoodi:", product_code, "\ntuotenimi:", product_name, "\nhinta:", price, "€")
                         return link, price, product_name
@@ -124,8 +124,12 @@ class TokmanniScraper(Scraper):
         except Exception as e:
             return ValueError("TOKMANNI: tuotesivua ei löytynyt.")
         
-    def extract_product_information(self, soup): # Returns price and product name or None
+    def extract_product_information(self, soup, product_code): # Returns price and product name or None
         try:
+            ean_div = soup.find('div', class_='product attribute sku')
+            ean_value = ean_div.find('div', class_='value').get_text(strip=True)
+            if(str(ean_value) != str(product_code)):
+                return ValueError("Tokamnni: Tuotesivun EAN ei täsmää haettua tuotetta.")
             # Find the span element with class "price-wrapper"
             price_wrapper_span = soup.find('span', class_='price-wrapper')
             # Extract the value from the data-price-amount attribute
@@ -140,20 +144,17 @@ class TokmanniScraper(Scraper):
             return ValueError("Tokmanni: Virhe tuotetietojen hakemisessa.")
 
 tokmanni_scraper = TokmanniScraper()
-tokmanni_scraper.search_product(6418677333262)
-tokmanni_scraper.search_product(7314150111060)
+tokmanni_scraper.search_product(6438140053527)
+tokmanni_scraper.search_product(6418677334962)
 tokmanni_scraper.search_product(982756917501)
 
 
-# EAN: 6418677333262
+# EAN: 6438140053527 <-- sivu ehdottaa jotain paskaa, pitäis olla ei tuloksia
+
+# EAN: 6418677334962
 # Nimi: Kytkin ABB Jussi 7 1067UP
 # Merkki: ABB
 # Hinta: 21,99
-
-# EAN: 7314150111060
-# Nimi: Hylsysarja Bahco S460 46-osainen
-# Merkki: Bahco
-# Hinta: 99,00
 
 # EAN 982756917501 <-- Ei hakutuloksia
 

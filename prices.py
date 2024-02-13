@@ -264,7 +264,7 @@ class TokmanniScraper(Scraper):
                 html = self.get_html_from_url(link, 10)
                 if html:
                     soup = BeautifulSoup(html, 'html.parser')
-                    price, product_name = self.extract_product_information(soup)
+                    price, product_name = self.extract_product_information(soup, product_code)
                     if product_name and price:
                         return link, price, product_name
                 else:
@@ -316,8 +316,12 @@ class TokmanniScraper(Scraper):
         except Exception as e:
             return ValueError("TOKMANNI: tuotesivua ei löytynyt.")
         
-    def extract_product_information(self, soup): # Returns price and product name or None
+    def extract_product_information(self, soup, product_code): # Returns price and product name or None
         try:
+            ean_div = soup.find('div', class_='product attribute sku')
+            ean_value = ean_div.find('div', class_='value').get_text(strip=True)
+            if(str(ean_value) != str(product_code)):
+                return ValueError("Tokamnni: Tuotesivun EAN ei täsmää haettua tuotetta.")
             # Find the span element with class "price-wrapper"
             price_wrapper_span = soup.find('span', class_='price-wrapper')
             # Extract the value from the data-price-amount attribute
@@ -385,7 +389,7 @@ class ExcelHandler:
                         product_code = format_EAN(row[0].value)
                         results = list(executor.map(lambda f: f(product_code), functions_to_execute))
                         # Process results and update the sheet accordingly
-                        if results[0]:  # PRISMA INFO TO EXCEL
+                        if all(result is not None for result in results[0][:4]):  # PRISMA INFO TO EXCEL
                             sheet.cell(row=row[0].row, column=target_column_index + 1, value=results[0][0].upper())  # product name
                             sheet.cell(row=row[0].row, column=target_column_index + 2, value=results[0][2])  # brand
                             sheet.cell(row=row[0].row, column=target_column_index + 3, value=results[0][3])  # price
@@ -451,11 +455,12 @@ class ExcelColorChanger:
                 min_value = float('inf')
                 min_column = None
 
-                for cell in row:
-                    if cell.value is not None and isinstance(cell.value, (float, int)):
-                        if cell.value < min_value:
-                            min_value = cell.value
-                            min_column = cell.column
+                if row[3].value is not None:  # Check if the fourth cell is not empty
+                    for cell in row:  # Iterate over cells in the row
+                        if cell.value is not None and isinstance(cell.value, (float, int)):
+                            if cell.value < min_value:
+                                min_value = cell.value
+                                min_column = cell.column
 
                 if min_column:
                     sheet.cell(row=row[0].row, column=min_column).fill = light_green_fill
@@ -472,7 +477,7 @@ class ExcelColorChanger:
 # SUN TIETOKONEELLA SIJAINNISSA "C:/Users/Karoliina/kilpailijahintoja.xlsx" NIIN                 #
 # MUUTA TOI RIVI NIIN ETTÄ SIINÄ LUKEE: file_path = "C:/Users/Karoliina/kilpailijahintoja.xlsx"  #
 ##################################################################################################
-file_path = "C:/Users/Slambe/Desktop/UNI/ohjelmointi/Python/SOK/kilpailijahintoja.xlsx"
+file_path = "C:/Users/Slambe/Desktop/UNI/ohjelmointi/Python/SOK/Kilpailijahintoja1.xlsx"
 
 start_time = time.time()
 handler = ExcelHandler()
