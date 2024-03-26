@@ -148,15 +148,18 @@ class PuuiloScraper(Scraper):
             return None, None, None
     
     def search_result_check(self, soup): # returns True if there are search results or False if no results
-        count_span = soup.find('span', class_='amsearch-results-count')
-        if count_span and count_span.get_text(strip=True) == '(0)':
+        hits_div = soup.find('div', class_='hits')
+        result_count = hits_div.find('span', class_='ais-Stats-text')
+        if result_count and result_count.get_text(strip=True) == '0 hakutulosta':
             return False
         else:
             return True
         
     def specific_product_page(self, soup): # returns link to the prodcut page or None
         try:
-            a_element = soup.select_one('article.product-item-info a.product-item-photo') # Find the <a> element inside the <article> tag
+            div_list_content = soup.find('div', class_='list-content')
+            div_result_wrapper = div_list_content.find('div', class_='result-wrapper')
+            a_element = div_result_wrapper.find('a', class_='result') # Find the <a> element inside the parent div tag
             if a_element:
                 link = a_element['href'] # Extract the value of the "href" attribute
                 return link
@@ -477,7 +480,7 @@ class ExcelColorChanger:
 # SUN TIETOKONEELLA SIJAINNISSA "C:/Users/Karoliina/kilpailijahintoja.xlsx" NIIN                 #
 # MUUTA TOI RIVI NIIN ETTÄ SIINÄ LUKEE: file_path = "C:/Users/Karoliina/kilpailijahintoja.xlsx"  #
 ##################################################################################################
-file_path = "C:/Users/Slambe/Desktop/UNI/ohjelmointi/Python/SOK/Kilpailijahintoja1.xlsx"
+file_path = "C:/Users/Karoliina/Desktop/kilpailijahintoja.xlsx"
 
 start_time = time.time()
 handler = ExcelHandler()
