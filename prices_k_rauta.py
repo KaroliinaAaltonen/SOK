@@ -100,10 +100,9 @@ class KRautaScraper(Scraper):
         except Exception as e:
             return None, None
 
-prisma_scraper = PrismaScraper()
+prisma_scraper = KRautaScraper()
 prisma_scraper.search_product(6418677334948)
-prisma_scraper.search_product(7314150111060)
-prisma_scraper.search_product(982756917501)
+prisma_scraper.search_product(6416129362310)
 
 
 
@@ -112,7 +111,7 @@ prisma_scraper.search_product(982756917501)
 # Merkki: ABB
 # Hinta: 28,80
 
-# EAN: 7314150111060 <-- ehdottaa jotain paskaa mut pitäisi olla ei tuloksia. Ja onkin :)
+# EAN: 7314150111060 <-- pitäis löytää mut ei löydä
 
 # EAN 982756917501 <-- Ei hakutuloksia "Hakusanalla ei löytynyt yhtään tuotetta." ku hakee prismasta
 

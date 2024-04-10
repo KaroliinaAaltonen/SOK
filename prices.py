@@ -102,10 +102,17 @@ class PrismaScraper(Scraper):
                         if(int(ean_value) != product_code):
                             return ValueError("EAN code does not match prisma.fi product code")
                         break
-            # Find the element with class 'ProductMainInfo_brand__NbMHp'
-            brand_div = soup.find('div', class_='ProductMainInfo_brand__NbMHp')
-            # Extract the brand text from the <a> tag inside the div
-            brand_name = brand_div.find('a').text
+
+            try:
+                # Find the element with class 'ProductMainInfo_brand__NbMHp'
+                brand_div = soup.find('div', class_='ProductMainInfo_brand__NbMHp')
+                print(brand_div)
+                # Extract the brand text from the <a> tag inside the div
+                brand_name = brand_div.find('a').text
+                print(brand_name)
+            except Exception as e:
+                # No brand name tag present on the website, for example, some IDO products have no brand tags
+                brand_name = "UNDEFINED"
 
             # Find the element with class 'ProductMainInfo_finalPrice__1hFhA'
             price_span = soup.find('span', class_='ProductMainInfo_finalPrice__1hFhA')
@@ -480,7 +487,7 @@ class ExcelColorChanger:
 # SUN TIETOKONEELLA SIJAINNISSA "C:/Users/Karoliina/kilpailijahintoja.xlsx" NIIN                 #
 # MUUTA TOI RIVI NIIN ETTÄ SIINÄ LUKEE: file_path = "C:/Users/Karoliina/kilpailijahintoja.xlsx"  #
 ##################################################################################################
-file_path = "C:/Users/Slambe/Desktop/UNI/ohjelmointi/Python/SOK/kilpailijahintoja.xlsx"
+file_path = "C:/Users/Karoliina/Desktop/CODE_STUFF/AWP/nytmatapanitteni/kilpailijahintoja.xlsx"
 
 start_time = time.time()
 handler = ExcelHandler()

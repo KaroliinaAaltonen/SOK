@@ -43,6 +43,7 @@ class PrismaScraper(Scraper):
     def search_product(self, product_code):
         try:
             url = f"https://www.prisma.fi/haku?search={product_code}"
+            print(url)
             html = self.get_html_from_url(url)
             if html:
                 soup = BeautifulSoup(html, 'html.parser')
@@ -50,10 +51,12 @@ class PrismaScraper(Scraper):
                     return None, None, None
                 link = self.specific_product_page(soup)
                 link = f"https://www.prisma.fi{link}"
+                print(link)
                 html = self.get_html_from_url(link)
                 if html:
                     soup = BeautifulSoup(html, 'html.parser')
                     product_name, brand_name, price = self.extract_product_information(soup, product_code)
+                    print("\nTUOTE:",product_name, product_code, brand_name, price,"\n")
                     return print(product_name, link, brand_name, price)
                 else:
                     print("(1) PRISMA: Error with handling HTML.")
@@ -99,25 +102,36 @@ class PrismaScraper(Scraper):
                     if dt_tag.text.strip() == 'Tuotekoodi':
                         dd_tag = dt_tag.find_next_sibling('dd')
                         ean_value = dd_tag.text.strip()
+                        print(ean_value)
                         if(int(ean_value) != product_code):
                             return ValueError("EAN code does not match prisma.fi product code")
                         break
-            # Find the element with class 'ProductMainInfo_brand__NbMHp'
-            brand_div = soup.find('div', class_='ProductMainInfo_brand__NbMHp')
-            # Extract the brand text from the <a> tag inside the div
-            brand_name = brand_div.find('a').text
-
+            try:
+                # Find the element with class 'ProductMainInfo_brand__NbMHp'
+                brand_div = soup.find('div', class_='ProductMainInfo_brand__NbMHp')
+                print(brand_div)
+                # Extract the brand text from the <a> tag inside the div
+                brand_name = brand_div.find('a').text
+                print(brand_name)
+            except Exception as e:
+                # No brand name tag present in the website
+                brand_name = "UNDEFINED"
+            print("BRAND NAME:",brand_name)
             # Find the element with class 'ProductMainInfo_finalPrice__1hFhA'
             price_span = soup.find('span', class_='ProductMainInfo_finalPrice__1hFhA')
+            print(price_span)
             # Extract the price text from the span and remove non-numeric characters
             price_text = price_span.text.replace('&nbsp;', '').replace('€', '').replace(',', '.')
+            print(price_text)
             # Convert the extracted text to a float
             price = float(price_text)
 
             # Find the element with class 'ProductMainInfo_title__VKU68' and data-test-id 'product-name'
             product_name_h1 = soup.find('h1', class_='ProductMainInfo_title__VKU68', attrs={'data-test-id': 'product-name'})
+            print(product_name_h1)
             # Extract the text content from the h1 element
             product_name = product_name_h1.text
+            print(product_name)
             
             return product_name, brand_name, price
         except Exception as e:
@@ -125,8 +139,7 @@ class PrismaScraper(Scraper):
 
 prisma_scraper = PrismaScraper()
 prisma_scraper.search_product(6418677334948)
-prisma_scraper.search_product(7314150111060)
-prisma_scraper.search_product(982756917501)
+prisma_scraper.search_product(6416129362310)
 
 
 
