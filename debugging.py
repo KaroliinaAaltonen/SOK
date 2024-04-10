@@ -55,6 +55,7 @@ class PrismaScraper(Scraper):
                 if html:
                     soup = BeautifulSoup(html, 'html.parser')
                     product_name, brand_name, price = self.extract_product_information(soup, product_code)
+                    print("\nPRISMA:",product_name, product_code, brand_name, price,"\n")
                     if product_name and brand_name:
                         return product_name, link, brand_name, price
                 else:
@@ -138,6 +139,7 @@ class PuuiloScraper(Scraper):
                 if html:
                     soup = BeautifulSoup(html, 'html.parser')
                     price, product_name = self.extract_product_information(soup, product_code)
+                    print("\nPUUILO:",product_name, product_code, price,"\n")
                     if product_name and price:
                         return link, price, product_name
                 else:
@@ -209,6 +211,7 @@ class KRautaScraper(Scraper):
                 if html:
                     soup = BeautifulSoup(html, 'html.parser')
                     price, product_name = self.extract_product_information(soup)
+                    print("\nK-RAUTA:",product_name, product_code, price,"\n")
                     if product_name and price:
                         return link, price, product_name
                 else:
@@ -268,6 +271,7 @@ class TokmanniScraper(Scraper):
                 if html:
                     soup = BeautifulSoup(html, 'html.parser')
                     price, product_name = self.extract_product_information(soup, product_code)
+                    print("\nTOKMANNI:",product_name, product_code, price,"\n")
                     if product_name and price:
                         return link, price, product_name
                 else:
