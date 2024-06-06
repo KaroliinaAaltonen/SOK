@@ -9,9 +9,12 @@ import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
 from openpyxl.utils import get_column_letter
 import openpyxl.styles
-import winsound
 from openpyxl.styles import PatternFill
 from openpyxl import load_workbook
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import winsound
 # web scraping functions
 # driver is started locally (and ended)
 # get_html_from_url() uses sleep=10 with puuilo.fi and tokmanni.fi as per their robots.txt
@@ -55,25 +58,24 @@ class PrismaScraper(Scraper):
                 if html:
                     soup = BeautifulSoup(html, 'html.parser')
                     product_name, brand_name, price = self.extract_product_information(soup, product_code)
-                    if product_name and brand_name:
-                        return product_name, link, brand_name, price
+                    return product_name, link, brand_name, price
                 else:
                     raise ValueError("(1) PRISMA: Error with handling HTML.")
             else:
                 raise ValueError("(2) PRISMA: Error with handling HTML.")
         except Exception as e:
-            return None, None, None
+            return None, None, None, None
 
     def search_result_check(self, soup): #returns False if there were no search results or True if there were results
         try:
             no_search_results_element = soup.find('p', {'data-test-id': 'no-search-results', 'class': 'search_noResultTitle__PTo4Q'})
             if no_search_results_element:
-                result_text = no_search_results_element.get_text(strip=True)
+                #result_text = no_search_results_element.get_text(strip=True)
                 return False
             else:
                 return True
         except Exception as e:
-            return None
+            return False
 
     def specific_product_page(self, soup):
         try:
@@ -88,39 +90,52 @@ class PrismaScraper(Scraper):
         
     def extract_product_information(self, soup, product_code):
         try:
-            # Find the <div> element...
-            div_elements = soup.find_all('div', class_='Accordion_accordionContent__rtLYZ accordion-content')
-            # ...that contains the div...
-            for div in div_elements:
-                # ...that contains the <dt>-tags...
-                dt_tags = div.find_all('dt')
-                for dt_tag in dt_tags:
-                    # ...out of which one contains the product EAN
-                    if dt_tag.text.strip() == 'Tuotekoodi':
-                        dd_tag = dt_tag.find_next_sibling('dd')
-                        ean_value = dd_tag.text.strip()
-                        if(int(ean_value) != product_code):
-                            return ValueError("EAN code does not match prisma.fi product code")
-                        break
-            # Find the element with class 'ProductMainInfo_brand__NbMHp'
-            brand_div = soup.find('div', class_='ProductMainInfo_brand__NbMHp')
-            # Extract the brand text from the <a> tag inside the div
-            brand_name = brand_div.find('a').text
-
-            # Find the element with class 'ProductMainInfo_finalPrice__1hFhA'
-            price_span = soup.find('span', class_='ProductMainInfo_finalPrice__1hFhA')
-            # Extract the price text from the span and remove non-numeric characters
-            price_text = price_span.text.replace('&nbsp;', '').replace('€', '').replace(',', '.')
-            # Convert the extracted text to a float
-            price = float(price_text)
-
-            # Find the element with class 'ProductMainInfo_title__VKU68' and data-test-id 'product-name'
-            product_name_h1 = soup.find('h1', class_='ProductMainInfo_title__VKU68', attrs={'data-test-id': 'product-name'})
-            # Extract the text content from the h1 element
-            product_name = product_name_h1.text
+            # Initialize the WebDriver for interaction
+            url = self.driver.current_url
+            self.driver.get(url)
             
+            # Wait for the accordion button to be present
+            accordion_button = WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, '[data-test-id="accordion-trigger-product-feature-item"]'))
+            )
+            accordion_button.click()
+
+            # Wait for the content to be present after clicking the button
+            WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, '[data-test-id="accordion-content-product-feature-item"]'))
+            )
+
+            # Get the updated page source and parse it with BeautifulSoup
+            html = self.driver.page_source
+            soup = BeautifulSoup(html, 'html.parser')
+
+            # Extract the EAN number
+            ean_number = None
+            dt_elements = soup.find_all('dt')
+            for dt in dt_elements:
+                if 'Tuotekoodi' in dt.text:
+                    ean_number = dt.find_next_sibling('dd').text.strip()
+                    break
+            if int(ean_number) != product_code:
+                raise ValueError("PRISMA: EAN-koodi ei vastannut hakua")
+            
+            # Extract the product name from the specified h1 tag
+            product_name_h1 = soup.find('h1', class_='text-heading-small-regular pb-xxsmall sm:pb-medium', attrs={'data-test-id': 'product-name'})
+            product_name = product_name_h1.text.strip()
+            
+            brand_name="??"
+            brand_div = soup.find('div', class_='text-body-medium-regular mb-xxsmall text-color-text-stronger-neutral')
+            if brand_div:
+                brand_name = brand_div.find('a', {'data-test-id': 'product-brand-link'}).text
+
+            price_span = soup.find('span', class_='text-heading-small-medium flex sm:text-heading-medium-medium')
+            price_text = price_span.text.strip()
+            # Remove the euro sign and non-breaking space
+            price = price_text.replace('€', '').replace('\xa0', '')
             return product_name, brand_name, price
+
         except Exception as e:
+            print(f"Error extracting product information: {str(e)}")
             return None, None, None
 
 class PuuiloScraper(Scraper):
@@ -132,7 +147,8 @@ class PuuiloScraper(Scraper):
             html = self.get_html_from_url(url)
             if html:
                 soup = BeautifulSoup(html, 'html.parser')
-                self.search_result_check(soup)                
+                if not self.search_result_check(soup):
+                    raise ValueError("\nPUUILO:\nEi tuloksia haulla:", product_code)                
                 link = self.specific_product_page(soup)
                 html = self.get_html_from_url(link)
                 if html:
@@ -262,7 +278,8 @@ class TokmanniScraper(Scraper):
             html = self.get_html_from_url(url, 10)
             if html:
                 soup = BeautifulSoup(html, 'html.parser')
-                self.search_result_check(soup)
+                if not self.search_result_check(soup):
+                    raise ValueError("\nTOKMANNI:\nEi tuloksia haulla:", product_code)
                 link = self.specific_product_page(soup, product_code)
                 html = self.get_html_from_url(link, 10)
                 if html:
@@ -293,7 +310,7 @@ class TokmanniScraper(Scraper):
             no_results_text = target_div.get_text()
             # Check if the target text is present in the div
             if target_text in no_results_text:
-                return ValueError("TOKMANNI: tuotetta ei löytynyt hausta")
+                return False
             else:
                 return True
         except Exception as e:
@@ -315,9 +332,9 @@ class TokmanniScraper(Scraper):
             if link:
                 return link
             else:
-                return ValueError("TOKMANNI: tuotesivua ei löytynyt.")
+                raise ValueError("TOKMANNI: tuotesivua ei löytynyt.")
         except Exception as e:
-            return ValueError("TOKMANNI: tuotesivua ei löytynyt.")
+            return None
         
     def extract_product_information(self, soup, product_code): # Returns price and product name or None
         try:

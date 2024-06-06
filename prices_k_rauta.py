@@ -47,7 +47,7 @@ class KRautaScraper(Scraper):
             if html:
                 soup = BeautifulSoup(html, 'html.parser')
                 if not self.search_result_check(soup):
-                    ValueError("\nK-RAUTA:\nEi tuloksia haulla:", product_code)
+                    raise ValueError("\nK-RAUTA:\nEi tuloksia haulla:", product_code)
                 
                 link = self.specific_product_page(soup)
                 link = f"https://www.k-rauta.fi{link}"
@@ -59,9 +59,9 @@ class KRautaScraper(Scraper):
                         print("\nK-RAUTA:\ntuotekoodi:", product_code, "\ntuotenimi:", product_name, "\nhinta:", price, "€")
                         return link, price, product_name
                 else:
-                    ValueError("(1) K-RAUTA: Error with handling HTML.")
+                    raise ValueError("(1) K-RAUTA: Error with handling HTML.")
             else:
-                ValueError("(2) K-RAUTA: Error with handling HTML.")
+                raise ValueError("(2) K-RAUTA: Error with handling HTML.")
         except Exception as e:
             return None, None, None
 
@@ -69,7 +69,7 @@ class KRautaScraper(Scraper):
         try:
             no_search_results_element = soup.find('div', class_="empty-search-result")
             if no_search_results_element:
-                result_text = no_search_results_element.get_text(strip=True)
+                #result_text = no_search_results_element.get_text(strip=True)
                 return False
             else:
                 return True
@@ -100,10 +100,10 @@ class KRautaScraper(Scraper):
         except Exception as e:
             return None, None
 
-prisma_scraper = PrismaScraper()
-prisma_scraper.search_product(6418677334948)
-prisma_scraper.search_product(7314150111060)
-prisma_scraper.search_product(982756917501)
+krauta_scraper = KRautaScraper()
+krauta_scraper.search_product(6418677334948)
+krauta_scraper.search_product(7314150111060)
+krauta_scraper.search_product(982756917501)
 
 
 
@@ -112,7 +112,7 @@ prisma_scraper.search_product(982756917501)
 # Merkki: ABB
 # Hinta: 28,80
 
-# EAN: 7314150111060 <-- ehdottaa jotain paskaa mut pitäisi olla ei tuloksia. Ja onkin :)
+# EAN: 7314150111060 <-- Ei hakutuloksia. "Valitettavasti emme löytäneet mitään hakusanalla"
 
-# EAN 982756917501 <-- Ei hakutuloksia "Hakusanalla ei löytynyt yhtään tuotetta." ku hakee prismasta
+# EAN 982756917501 <-- Ei hakutuloksia "Valitettavasti emme löytäneet mitään hakusanalla..."
 

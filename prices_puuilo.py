@@ -46,18 +46,20 @@ class PuuiloScraper(Scraper):
             html = self.get_html_from_url(url)
             if html:
                 soup = BeautifulSoup(html, 'html.parser')
-                self.search_result_check(soup)
+                if not self.search_result_check(soup):
+                    raise ValueError("\PUUILO:\nEi tuloksia haulla:", product_code)
                 link = self.specific_product_page(soup)
                 html = self.get_html_from_url(link)
                 if html:
                     soup = BeautifulSoup(html, 'html.parser')
                     price, product_name = self.extract_product_information(soup, product_code)
                     if product_name and price:
+                        #print("PUUILO\nLinkki:",link,"\nTuote:",product_name,"\nHinta:",price,"\n")
                         return link, price, product_name
                 else:
-                    return ValueError("(1) PUUILO: Error with handling HTML.")
+                    raise ValueError("(1) PUUILO: Error with handling HTML.")
             else:
-                return ValueError("(2) PUUILO: Error with handling HTML.")
+                raise ValueError("(2) PUUILO: Error with handling HTML.")
         except Exception as e:
             return None, None, None
     
@@ -78,7 +80,7 @@ class PuuiloScraper(Scraper):
                 link = a_element['href'] # Extract the value of the "href" attribute
                 return link
             else:
-                return ValueError("PUUILO: Tuotesivua ei löytynyt.")
+                raise ValueError("PUUILO: Tuotesivua ei löytynyt.")
         except Exception as e:
             return None
 
