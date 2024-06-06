@@ -46,6 +46,7 @@ class PrismaScraper(Scraper):
     def search_product(self, product_code):
         try:
             url = f"https://www.prisma.fi/haku?search={product_code}"
+            print(url)
             html = self.get_html_from_url(url)
             if html:
                 soup = BeautifulSoup(html, 'html.parser')
@@ -53,6 +54,7 @@ class PrismaScraper(Scraper):
                     raise ValueError("\nPRISMA: Tuotesivua ei löytynyt")
                 link = self.specific_product_page(soup)
                 link = f"https://www.prisma.fi{link}"
+                print(link)
                 html = self.get_html_from_url(link)
                 if html:
                     soup = BeautifulSoup(html, 'html.parser')
