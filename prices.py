@@ -497,7 +497,7 @@ class ExcelColorChanger:
 # SUN TIETOKONEELLA SIJAINNISSA "C:/Users/Karoliina/kilpailijahintoja.xlsx" NIIN                 #
 # MUUTA TOI RIVI NIIN ETTÄ SIINÄ LUKEE: file_path = "C:/Users/Karoliina/kilpailijahintoja.xlsx"  #
 ##################################################################################################
-file_path = "C:/Users/Karoliina/Desktop/CODE_STUFF/AWP/nytmatapanitteni/kilpailijahintoja.xlsx"
+file_path = "C:/Users/Slambe/Desktop/UNI/ohjelmointi/Python/SOK/kilpailijahintoja.xlsx"
 
 start_time = time.time()
 handler = ExcelHandler()
